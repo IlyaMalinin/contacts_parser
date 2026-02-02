@@ -2,7 +2,6 @@
 Ищет все email и телефоны на сайте.
 
 🚀 Быстрый старт
-bash
 # Установи зависимости
 pip install -r requirements.txt
 
@@ -22,12 +21,11 @@ python main.py
 📦 Зависимости
 Файл requirements.txt:
 
-text
 requests>=2.31.0
 beautifulsoup4>=4.12.0
 
 📊 Пример работы
-bash
+
 $ python main.py
 Введите URL сайта: https://example.com
 
@@ -38,7 +36,7 @@ $ python main.py
 }
 
 📁 Структура проекта
-text
+
 project/
 ├── main.py              # Основной скрипт
 ├── constants.py         # Константы и паттерны
