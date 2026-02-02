@@ -3,58 +3,85 @@ from bs4 import BeautifulSoup
 import re
 from urllib.parse import urljoin
 
-email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-phone_patterns = [
-    r'\+7\s?\d{3}\s?\d{3}\s?\d{2}\s?\d{2}',  # +7 999 123 45 67
-    r'8\s?\d{3}\s?\d{3}\s?\d{2}\s?\d{2}',     # 8 999 123 45 67
-    r'\+7-\d{3}-\d{3}-\d{2}-\d{2}',           # +7-999-123-45-67
-    r'\b\d{3}[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}\b',  # 999-123-45-67
-    r'\(\d{3}\)\s?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}',  # (999) 123-45-67
-]
+from constants import EMAIL_PATTERNS, PHONE_PATTERNS, LIMITATION_URL
 
-start_url = input('Введите URL сайта: ')
-urls = [start_url,]
-visited_urls = []
-phone_list = []
-mail_list = []
 
-while urls:
-    url = urls.pop()
-    if url in visited_urls:
-        continue
+def search_by_pattern(paterns, text, save_list):
+    """
+    Ищет контакты в тексте по заданным паттернам и сохраняет в список.
 
-    response = requests.get(url, timeout=30)
-    if response.status_code != 200:
-        print(f"Ошибка {response.status_code} для {url}")
-        visited_urls.append(url)
-        continue
+    Args:
+        paterns (tuple): Кортеж с регулярными выражениями для поиска.
+        text (str): Текст для анализа.
+        save_list (list): Список для сохранения найденных контактов.
+    """
 
-    soup = BeautifulSoup(response.text, 'html.parser')
-    visited_urls.append(url)
-    for link in soup.find_all('a', href=True):
-        href = link['href']
-        if not href or href.startswith(('#', 'mailto:', 'tel:', 'javascript:')):
+    for patern in paterns:
+        found_contacts = re.findall(patern, text)
+        if found_contacts:
+            for contact in found_contacts:
+                if contact not in save_list:
+                    save_list.append(contact)
+
+
+def contact_parser():
+    """
+    Парсит сайт, находит email и телефоны на всех страницах.
+
+    Функция запрашивает URL сайта у пользователя, обходит его страницы
+    (в количестве, ограниченном LIMITATION_URL) и возвращает все найденные
+    email адреса и телефонные номера.
+    """
+
+    start_url = input('Введите URL сайта: ')
+    urls = [start_url,]
+    visited_urls = []
+    phone_list = []
+    email_list = []
+
+    while urls and len(visited_urls) <= LIMITATION_URL:
+        url = urls.pop()
+        if url in visited_urls:
             continue
-        full_url = urljoin(url, href)
-        if (full_url not in visited_urls and 
-                full_url not in urls and
-                start_url in full_url):
 
-            urls.append(full_url)
+        try:
+            response = requests.get(url, timeout=30)
 
-    text = soup.get_text()
-    for patern in phone_patterns:
-        found_phone = re.findall(patern, text)
-        if found_phone:
-            for phone in found_phone:
-                if phone not in phone_list:
-                    phone_list.append(phone)
-    found_emails = re.findall(email_pattern, text)
-    if found_emails:
-        for email in found_emails:
-            if email not in mail_list:
-                mail_list.append(email)
+        except requests.exceptions.RequestException:
+            visited_urls.append(url)
+            continue
 
-info = {'url': start_url, 'emails': mail_list, 'phones': phone_list}
+        if response.status_code != 200:
+            visited_urls.append(url)
+            continue
 
-print(info)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        visited_urls.append(url)
+
+        for link in soup.find_all('a', href=True):
+            href = link['href']
+            if not href or href.startswith(
+                ('#', 'mailto:', 'tel:', 'javascript:')
+            ):
+                continue
+
+            full_url = urljoin(url, href)
+
+            if (full_url not in visited_urls and
+                    full_url not in urls and
+                    start_url in full_url):
+
+                urls.append(full_url)
+
+        text = soup.get_text()
+
+        search_by_pattern(PHONE_PATTERNS, text, phone_list)
+
+        search_by_pattern(EMAIL_PATTERNS, text, email_list)
+
+    info = {'url': start_url, 'emails': email_list, 'phones': phone_list}
+    return info
+
+
+if __name__ == '__main__':
+    print(contact_parser())
