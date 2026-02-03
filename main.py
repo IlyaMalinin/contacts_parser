@@ -6,18 +6,18 @@ from urllib.parse import urljoin
 from constants import EMAIL_PATTERNS, PHONE_PATTERNS, LIMITATION_URL
 
 
-def search_by_pattern(paterns, text, save_list):
+def search_by_pattern(patterns, text, save_list):
     """
     Ищет контакты в тексте по заданным паттернам и сохраняет в список.
 
     Args:
-        paterns (tuple): Кортеж с регулярными выражениями для поиска.
+        patterns (tuple): Кортеж с регулярными выражениями для поиска.
         text (str): Текст для анализа.
         save_list (list): Список для сохранения найденных контактов.
     """
 
-    for patern in paterns:
-        found_contacts = re.findall(patern, text)
+    for pattern in patterns:
+        found_contacts = re.findall(pattern, text)
         if found_contacts:
             for contact in found_contacts:
                 if contact not in save_list:
