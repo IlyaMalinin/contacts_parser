@@ -60,9 +60,20 @@ def contact_parser():
 
         for link in soup.find_all('a', href=True):
             href = link['href']
-            if not href or href.startswith(
-                ('#', 'mailto:', 'tel:', 'javascript:')
-            ):
+            if href.startswith('mailto:'):
+                email = href[7:]
+                email = email.split('?')[0]
+                if email and email not in email_list:
+                    email_list.append(email)
+                continue
+
+            if href.startswith('tel:'):
+                phone = href[4:]
+                if phone and phone not in phone_list:
+                    phone_list.append(phone)
+                continue
+
+            if not href or href.startswith(('#', 'javascript:')):
                 continue
 
             full_url = urljoin(url, href)
